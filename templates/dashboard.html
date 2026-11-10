@@ -40,6 +40,7 @@
     <div class="card"><div class="k">Signals disagreed</div><div class="v">{{ s.signal_disagreement_rate_percent }}%</div></div>
     <div class="card"><div class="k">Average confidence</div><div class="v">{{ s.average_confidence if s.average_confidence is not none else "–" }}</div></div>
     <div class="card"><div class="k">Certificates issued</div><div class="v">{{ s.certificates_issued }}</div></div>
+    <div class="card"><div class="k">Content types (text / image)</div><div class="v">{{ s.content_type_counts.text }} / {{ s.content_type_counts.image }}</div></div>
   </div>
 
   <h2>Detection pattern</h2>
@@ -59,10 +60,10 @@
   <h2>Recent audit log</h2>
   <div class="tbl">
   <table>
-    <tr><th>Time (UTC)</th><th>Event</th><th>Content</th><th>Attribution</th><th>AI likelihood</th><th>LLM</th><th>Stylo</th><th>Markers</th><th>Status</th></tr>
+    <tr><th>Time (UTC)</th><th>Event</th><th>Content</th><th>Type</th><th>Attribution</th><th>AI likelihood</th><th>LLM</th><th>Stylo</th><th>Markers</th><th>Status</th></tr>
     {% for e in recent %}
     <tr>
-      <td>{{ e.timestamp[:19].replace("T", " ") }}</td><td>{{ e.event }}</td><td>{{ e.content_id[:8] }}</td>
+      <td>{{ e.timestamp[:19].replace("T", " ") }}</td><td>{{ e.event }}</td><td>{{ e.content_id[:8] }}</td><td>{{ e.content_type }}</td>
       <td>{{ e.attribution }}</td><td class="num">{{ e.ai_likelihood }}</td><td class="num">{{ e.llm_score }}</td>
       <td class="num">{{ e.stylometric_score }}</td><td class="num">{{ e.marker_score }}</td><td>{{ e.status }}</td>
     </tr>

@@ -16,6 +16,24 @@ LABELS = {
     ),
 }
 
+# Stretch (multi-modal): images are judged from file metadata, so the wording says so.
+IMAGE_LABELS = {
+    "likely_ai": (
+        "🤖 Likely AI-generated image — This image's file information carries strong, consistent "
+        "signs that it was made with an AI image generator. This is an estimate, not proof, and "
+        "the creator can appeal it."
+    ),
+    "uncertain": (
+        "❔ Origin unclear — We couldn't tell from this image's file information whether it was "
+        "photographed, made by hand, or made with an AI tool. Many sites strip this information, "
+        "so treat this as \"we don't know,\" not as an accusation."
+    ),
+    "likely_human": (
+        "📷 Likely camera or human-made — This image's file information shows signs of a real "
+        "camera capture and no signs of an AI image generator."
+    ),
+}
+
 UNDER_REVIEW_LABEL = (
     "⏳ Under review — The creator has disputed the automated label on this work, and a person "
     "is reviewing it. No label is shown until the review is finished."
@@ -27,9 +45,9 @@ VERIFIED_HUMAN_LABEL = (
 )
 
 
-def label_for(attribution: str, status: str = "classified") -> str:
+def label_for(attribution: str, status: str = "classified", content_type: str = "text") -> str:
     if status == "under_review":
         return UNDER_REVIEW_LABEL
     if status == "verified_human":
         return VERIFIED_HUMAN_LABEL
-    return LABELS[attribution]
+    return (IMAGE_LABELS if content_type == "image" else LABELS)[attribution]

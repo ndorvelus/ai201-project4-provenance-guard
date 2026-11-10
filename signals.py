@@ -66,14 +66,18 @@ def _client():
     return _groq_client
 
 
-def llm_signal(text: str) -> dict:
-    """Ask the Groq-hosted LLM for an AI probability. Returns score None if the call fails."""
+def llm_signal(text: str, system_prompt: str = LLM_SYSTEM_PROMPT,
+               subject: str = "Text to assess") -> dict:
+    """Ask the Groq-hosted LLM for an AI probability. Returns score None if the call fails.
+
+    The image pipeline reuses this with its own system prompt (see image_signals.py).
+    """
     try:
         resp = _client().chat.completions.create(
             model=GROQ_MODEL,
             messages=[
-                {"role": "system", "content": LLM_SYSTEM_PROMPT},
-                {"role": "user", "content": f"Text to assess:\n\"\"\"\n{text}\n\"\"\""},
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"{subject}:\n\"\"\"\n{text}\n\"\"\""},
             ],
             response_format={"type": "json_object"},
             temperature=0,

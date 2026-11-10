@@ -75,25 +75,32 @@ def connect() -> sqlite3.Connection:
 def init_db() -> None:
     with connect() as conn:
         conn.executescript(SCHEMA)
+        # Stretch (multi-modal): add content_type to databases created before images existed.
+        for table in ("submissions", "audit_log"):
+            cols = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+            if "content_type" not in cols:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN content_type TEXT NOT NULL "
+                             "DEFAULT 'text'")
 
 
 def _signal_scores(signals: dict) -> tuple:
-    return (
-        signals["llm"]["score"],
-        signals["stylometric"]["score"],
-        signals["markers"]["score"],
-    )
+    """Column scores for the text signals. Image signals (generator / capture / llm) have their
+    own names, so only llm_score is filled for them; every score is in details_json either way."""
+    def score(name):
+        return (signals.get(name) or {}).get("score")
+    return score("llm"), score("stylometric"), score("markers")
 
 
 def write_audit(conn: sqlite3.Connection, *, event: str, sub: dict, appeal_id: str | None = None,
                 appeal_reasoning: str | None = None, details: dict | None = None) -> None:
     conn.execute(
-        """INSERT INTO audit_log (timestamp, event, content_id, creator_id, attribution,
-               ai_likelihood, confidence, llm_score, stylometric_score, marker_score, status,
-               appeal_filed, appeal_id, appeal_reasoning, details_json)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        """INSERT INTO audit_log (timestamp, event, content_id, creator_id, content_type,
+               attribution, ai_likelihood, confidence, llm_score, stylometric_score,
+               marker_score, status, appeal_filed, appeal_id, appeal_reasoning, details_json)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
-            now_iso(), event, sub["content_id"], sub["creator_id"], sub["attribution"],
+            now_iso(), event, sub["content_id"], sub["creator_id"],
+            sub.get("content_type", "text"), sub["attribution"],
             sub["ai_likelihood"], sub["confidence"], sub["llm_score"], sub["stylometric_score"],
             sub["marker_score"], sub["status"], 1 if appeal_id or sub.get("appeal_filed") else 0,
             appeal_id, appeal_reasoning, json.dumps(details or {}),
@@ -102,11 +109,13 @@ def write_audit(conn: sqlite3.Connection, *, event: str, sub: dict, appeal_id: s
 
 
 def save_submission(*, creator_id: str, text: str, signals: dict, result: dict,
-                    label: str) -> dict:
+                    label: str, content_type: str = "text") -> dict:
+    """`text` is the submitted text, or the canonical metadata JSON for an image."""
     llm, stylo, marker = _signal_scores(signals)
     sub = {
         "content_id": str(uuid.uuid4()),
         "creator_id": creator_id,
+        "content_type": content_type,
         "created_at": now_iso(),
         "attribution": result["attribution"],
         "ai_likelihood": result["ai_likelihood"],
@@ -119,12 +128,12 @@ def save_submission(*, creator_id: str, text: str, signals: dict, result: dict,
     }
     with connect() as conn:
         conn.execute(
-            """INSERT INTO submissions (content_id, creator_id, text, created_at, attribution,
-                   ai_likelihood, confidence, llm_score, stylometric_score, marker_score,
-                   signals_json, label, status)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (sub["content_id"], creator_id, text, sub["created_at"], sub["attribution"],
-             sub["ai_likelihood"], sub["confidence"], llm, stylo, marker,
+            """INSERT INTO submissions (content_id, creator_id, content_type, text, created_at,
+                   attribution, ai_likelihood, confidence, llm_score, stylometric_score,
+                   marker_score, signals_json, label, status)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (sub["content_id"], creator_id, content_type, text, sub["created_at"],
+             sub["attribution"], sub["ai_likelihood"], sub["confidence"], llm, stylo, marker,
              json.dumps(signals), label, sub["status"]),
         )
         write_audit(conn, event="classified", sub=sub,
@@ -206,7 +215,8 @@ def open_appeals() -> list[dict]:
     with connect() as conn:
         rows = conn.execute(
             """SELECT a.appeal_id, a.created_at AS appeal_filed_at, a.reasoning AS creator_reasoning,
-                      a.status AS appeal_status, s.content_id, s.creator_id, s.text,
+                      a.status AS appeal_status, s.content_id, s.creator_id, s.content_type,
+                      s.text,
                       s.attribution AS original_attribution, s.ai_likelihood, s.confidence,
                       s.signals_json, s.created_at AS classified_at
                FROM appeals a JOIN submissions s USING (content_id)
@@ -227,6 +237,8 @@ def stats() -> dict:
             "SELECT attribution, COUNT(*) FROM submissions GROUP BY attribution")}
         by_status = {r[0]: r[1] for r in conn.execute(
             "SELECT status, COUNT(*) FROM submissions GROUP BY status")}
+        by_type = {r[0]: r[1] for r in conn.execute(
+            "SELECT content_type, COUNT(*) FROM submissions GROUP BY content_type")}
         appealed = conn.execute("SELECT COUNT(DISTINCT content_id) FROM appeals").fetchone()[0]
         avg_conf = conn.execute("SELECT AVG(confidence) FROM submissions").fetchone()[0]
         certs = conn.execute("SELECT COUNT(*) FROM certificates").fetchone()[0]
@@ -248,6 +260,7 @@ def stats() -> dict:
         "attribution_counts": attrs,
         "attribution_percent": {k: pct(v, total) for k, v in attrs.items()},
         "status_counts": by_status,
+        "content_type_counts": {k: by_type.get(k, 0) for k in ("text", "image")},
         "appeal_rate_percent": pct(appealed, total),
         "appeal_rate_on_ai_verdicts_percent": pct(ai_appeals, attrs["likely_ai"]),
         "average_confidence": round(avg_conf, 3) if avg_conf is not None else None,

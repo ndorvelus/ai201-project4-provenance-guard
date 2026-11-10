@@ -251,7 +251,18 @@ explicitly says it is not an accusation, and the AI label always tells readers a
   label switches to the "Verified human process" text (distinct ✅ badge). Logged as
   `certificate_issued`. Limitation: drafts can be fabricated; this raises the cost of lying,
   it doesn't make it impossible.
-- Multi-modal: not planned.
+- Multi-modal: not planned at first.
+- **Addendum (added after the core build): Multi-modal (+1).** Second content type = an image
+  described by its metadata (EXIF, PNG text chunks, C2PA credentials, dimensions, optional
+  description), sent to `POST /submit` with `content_type: "image"`. Signals:
+  - generator fingerprint (generator names, diffusion parameters, C2PA AI source type), weight 0.45;
+  - camera-capture evidence (make, exposure, timestamp, GPS, lens; generator-like dimensions), 0.30;
+  - LLM judge on the metadata JSON with an image prompt, 0.25.
+
+  Same thresholds, shrink rule and cap as text. A "likely AI" verdict needs a fingerprint ≥ 0.6
+  plus the LLM or capture signal ≥ 0.5, so missing metadata alone can't accuse anyone.
+  Image-specific label wording ("this image's file information"). Appeals work unchanged.
+  Certificates stay text-only.
 
 ---
 

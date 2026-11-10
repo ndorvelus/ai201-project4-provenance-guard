@@ -13,6 +13,7 @@ from flask_limiter.util import get_remote_address
 
 import storage
 from certificate import check_drafts
+from image_signals import canonical, run_all_image, validate_image
 from labels import UNDER_REVIEW_LABEL, VERIFIED_HUMAN_LABEL, label_for
 from scoring import combine
 from signals import run_all, words
@@ -49,9 +50,17 @@ def rate_limited(e):
 @limiter.limit(SUBMIT_LIMIT)
 def submit():
     body = request.get_json(silent=True) or {}
-    text = body.get("text")
+    content_type = body.get("content_type", "text")
     creator_id = body.get("creator_id")
-    if not isinstance(text, str) or not isinstance(creator_id, str) or not creator_id.strip():
+    if content_type not in ("text", "image"):
+        return _error("'content_type' must be 'text' (default) or 'image'", 400)
+    if not isinstance(creator_id, str) or not creator_id.strip():
+        return _error("JSON body must include a string field 'creator_id'", 400)
+    if content_type == "image":
+        return _submit_image(body.get("image"), creator_id.strip())
+
+    text = body.get("text")
+    if not isinstance(text, str):
         return _error("JSON body must include string fields 'text' and 'creator_id'", 400)
     text = text.strip()
     if len(text) < MIN_CHARS:
@@ -68,6 +77,7 @@ def submit():
     return jsonify({
         "content_id": sub["content_id"],
         "creator_id": sub["creator_id"],
+        "content_type": "text",
         "timestamp": sub["created_at"],
         "attribution": result["attribution"],
         "ai_likelihood": result["ai_likelihood"],
@@ -82,6 +92,39 @@ def submit():
             or signals["llm"]["details"].get("error"),
             "stylometric_details": signals["stylometric"]["details"],
             "marker_details": signals["markers"]["details"],
+        },
+        "scoring_notes": result["scoring_notes"],
+    })
+
+
+def _submit_image(meta, creator_id: str):
+    """Stretch (multi-modal): an image, described by its metadata, through the same pipeline."""
+    err = validate_image(meta)
+    if err:
+        return _error(err, 400)
+    signals = run_all_image(meta)
+    result = combine(signals, content_type="image")
+    label = label_for(result["attribution"], content_type="image")
+    sub = storage.save_submission(creator_id=creator_id, text=canonical(meta), signals=signals,
+                                  result=result, label=label, content_type="image")
+    return jsonify({
+        "content_id": sub["content_id"],
+        "creator_id": sub["creator_id"],
+        "content_type": "image",
+        "timestamp": sub["created_at"],
+        "attribution": result["attribution"],
+        "ai_likelihood": result["ai_likelihood"],
+        "confidence": result["confidence"],
+        "label": label,
+        "status": sub["status"],
+        "signals": {
+            "generator_score": signals["generator"]["score"],
+            "capture_score": signals["capture"]["score"],
+            "llm_score": signals["llm"]["score"],
+            "llm_reasoning": signals["llm"]["details"].get("reasoning")
+            or signals["llm"]["details"].get("error"),
+            "generator_details": signals["generator"]["details"],
+            "capture_details": signals["capture"]["details"],
         },
         "scoring_notes": result["scoring_notes"],
     })
@@ -154,6 +197,8 @@ def verify():
         return _error("no submission with that content_id", 404)
     if body.get("creator_id") != sub["creator_id"]:
         return _error("only the original creator can request verification", 403)
+    if sub.get("content_type", "text") != "text":
+        return _error("provenance certificates are only available for text submissions", 400)
     if sub["certificate"]:
         return jsonify({"status": "verified_human", "certificate": sub["certificate"],
                         "label": VERIFIED_HUMAN_LABEL})
@@ -186,6 +231,8 @@ def index():
         "service": "Provenance Guard",
         "endpoints": ["POST /submit", "POST /appeal", "GET /content/<id>", "GET /appeals",
                       "GET /log", "POST /verify", "GET /stats", "GET /dashboard"],
+        "content_types": {"text": "send 'text'", "image": "send content_type 'image' and an "
+                                                           "'image' object of metadata"},
         "rate_limits": {"/submit": SUBMIT_LIMIT, "/appeal": APPEAL_LIMIT},
     })
 

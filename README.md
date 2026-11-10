@@ -32,7 +32,7 @@ python app.py                                  # serves http://localhost:5001
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/submit` | `{text, creator_id}` → attribution, confidence, label, per-signal scores |
+| POST | `/submit` | `{text, creator_id}` → attribution, confidence, label, per-signal scores. *(stretch)* `{content_type: "image", image: {...metadata}, creator_id}` for images |
 | POST | `/appeal` | `{content_id, creator_id?, creator_reasoning}` → status `under_review` |
 | GET | `/content/<content_id>` | current status, label, scores, appeals, certificate |
 | GET | `/appeals` | reviewer queue: original text, scores, signal details, creator reasoning |
@@ -41,6 +41,7 @@ python app.py                                  # serves http://localhost:5001
 | GET | `/stats`, `/dashboard` | *(stretch)* analytics JSON and HTML dashboard |
 
 Test helpers: `python scripts/eval_inputs.py` prints every signal for the five reference inputs.
+`python scripts/eval_images.py` does the same for five sample images (metadata).
 `bash scripts/rate_limit_test.sh` sends 12 rapid requests.
 
 ---
@@ -366,7 +367,78 @@ Live `/stats` after testing:
  "average_confidence": 0.721, "signal_disagreement_rate_percent": 86.7, "certificates_issued": 1}
 ```
 (The high disagreement rate comes from the 10 identical rate-limit test submissions: a 12-word
-sentence the LLM scored 0.0 but stylometrics scored 0.83.)
+sentence the LLM scored 0.0 but stylometrics scored 0.83.) After the multi-modal feature was
+added, `/stats` also reports `content_type_counts` (`{"text": 16, "image": 4}` in a later run),
+and the dashboard shows it as a card plus a "Type" column in the audit table.
+
+### Multi-modal support (images via metadata)
+The second content type is an **image, described by its structured metadata**: EXIF fields, PNG
+text chunks, C2PA content credentials, width/height/format, and an optional short description
+written by the creator. Provenance Guard doesn't analyze pixels. The upload step (or the
+creator) sends the metadata as JSON, and it goes through the same pipeline as text:
+validate → three signals → `combine()` → label → SQLite + audit log → appeal.
+
+```bash
+curl -X POST http://localhost:5001/submit -H "Content-Type: application/json" -d '{
+  "content_type": "image", "creator_id": "demo-artist",
+  "image": {"filename": "neon_city.png", "format": "PNG", "width": 1024, "height": 1024,
+            "exif": {"software": "Midjourney v6"},
+            "description": "A neon-lit city street at night in the rain."}}'
+```
+
+**Signals used for images** (code: `image_signals.py`, each 0 = camera/human-made, 1 = AI):
+
+| Signal | Measures | Blind spot |
+|---|---|---|
+| **Generator fingerprint** (weight 0.45) | Generator names in software / C2PA fields (Midjourney, DALL·E, Stable Diffusion, Firefly…), diffusion parameters (`prompt`, `seed`, `sampler`, `steps`, AUTOMATIC1111's `parameters` chunk), C2PA digital source type `trainedAlgorithmicMedia` (0.97) or `compositeWith…` (0.85). With no fingerprint it scores 0.25, since metadata is easy to strip. A C2PA `digitalCapture` claim with no AI evidence scores 0.03. | Stripping or editing metadata removes it. The creator's description is deliberately not keyword-matched. |
+| **Camera-capture evidence** (0.30) | Camera make, exposure settings (ISO, aperture, shutter, focal length), capture timestamp, GPS and lens, plus whether the dimensions look like a generator's (both multiples of 64, ≤ 2048 px). Score = 0.7 × (1 − capture evidence) + 0.3 × dimension score. | Social sites and screenshots strip EXIF, so a real photo can lose all of this. EXIF can also be forged. |
+| **LLM judge** (0.25) | The same Groq model, with an image-specific prompt, reads the metadata JSON (and description). It's told that missing metadata is only weak evidence. | Sees only what the other two signals see, which is why it gets the smallest weight. |
+
+**Conflict rules** reuse the text design: shrink toward 0.5 when the scores spread by more than
+0.5, the same 0.75 / 0.35 thresholds, and the 0.74 cap. The corroboration rule is
+image-specific: a "likely AI" verdict needs a generator fingerprint (≥ 0.6) **plus** the LLM or
+capture signal (≥ 0.5). Missing camera metadata alone can never produce "likely AI".
+
+**Image labels** (`labels.py` `IMAGE_LABELS`). They say "file information" because that is all
+the system sees:
+- 🤖 "Likely AI-generated image — This image's file information carries strong, consistent signs that it was made with an AI image generator. This is an estimate, not proof, and the creator can appeal it."
+- ❔ "Origin unclear — We couldn't tell from this image's file information whether it was photographed, made by hand, or made with an AI tool. Many sites strip this information, so treat this as "we don't know," not as an accusation."
+- 📷 "Likely camera or human-made — This image's file information shows signs of a real camera capture and no signs of an AI image generator."
+
+`scripts/eval_images.py` output (synthetic metadata, live Groq calls):
+```
+input                    gen  capt   llm  ai_lik  conf  attribution
+-------------------------------------------------------------------
+midjourney_png          0.95  1.00  0.99   0.975  0.97  likely_ai
+a1111_params_png        0.95  1.00  1.00   0.978  0.98  likely_ai
+phone_photo_jpeg        0.25  0.07  0.02   0.139  0.86  likely_human
+stripped_screenshot     0.25  0.70  0.10   0.408  0.59  uncertain  (signals disagree)
+firefly_composite       0.85  0.28  0.95   0.622  0.62  uncertain  (signals disagree)
+```
+- The stripped screenshot of a hand-painted watercolor comes out "uncertain", not AI: there's no
+  fingerprint, and missing EXIF is only weak evidence.
+- The Firefly composite is a real Canon photo with generative fill. Its signals disagree
+  (fingerprint 0.85, camera evidence 0.28), so it's shrunk to "uncertain", which is honest for a
+  partly AI image.
+
+Live `/submit` response for the Midjourney example (trimmed):
+```json
+{"content_type": "image", "attribution": "likely_ai", "ai_likelihood": 0.975, "confidence": 0.975,
+ "label": "🤖 Likely AI-generated image — This image's file information carries strong, consistent signs ...",
+ "signals": {"generator_score": 0.95, "capture_score": 1.0, "llm_score": 0.99,
+   "llm_reasoning": "The EXIF software field explicitly identifies 'Midjourney v6', a known AI image generator, providing definitive evidence of algorithmic creation.",
+   "generator_details": {"evidence": ["exif.software names a generator (midjourney)"], "fingerprint_found": true},
+   "capture_details": {"capture_evidence": 0.0, "width": 1024, "height": 1024, "dimensions_generator_like": 1.0}},
+ "scoring_notes": {"weights_used": {"generator": 0.45, "capture": 0.3, "llm": 0.25},
+                   "signal_spread": 0.05, "ai_verdict_corroborated": true}}
+```
+More details from the live tests:
+- Appeals work the same way for images (that Midjourney submission went to `under_review`, and
+  the log recorded `appeal_filed` with `content_type: "image"`).
+- `POST /verify` on an image returns `400`, because certificates are drafts-based and text-only.
+- Empty metadata, description-only metadata, or an unknown `content_type` each return `400`.
+- In storage, the canonical metadata JSON is saved as the submission's content. `llm_score` is
+  filled in the audit-log columns, and all image signal scores are in each entry's `details`.
 
 
 ---
@@ -393,6 +465,10 @@ sentence the LLM scored 0.0 but stylometrics scored 0.83.)
    strongest-weighted signal.
 5. **Scores aren't calibrated against labeled data.** The thresholds come from reasoning plus a
    handful of probe texts, not a held-out evaluation set.
+6. **Image attribution depends entirely on metadata.** Anyone can strip a Midjourney tag or
+   paste fake camera EXIF onto a generated image. The system never looks at pixels, so a
+   cleaned AI image lands in "uncertain" (or even "likely human", if forged camera EXIF is
+   added). It also trusts that the submitted metadata really came from the file.
 
 ---
 
@@ -416,6 +492,11 @@ accusation.
   similarity.
 - **Model and port.** The suggested Groq model is no longer served (404), so I switched to
   `qwen/qwen3.8-27b`. Port 5000 is taken by macOS AirPlay, so the app runs on 5001.
+- **Multi-modal support was added after the spec.** planning.md §7 originally said "not
+  planned". It was added later as images-via-metadata, with an addendum in planning.md §7.
+  `combine()` gained a `content_type` parameter rather than a second scorer, so text and images
+  share the same thresholds, disagreement shrink and cap. Only the weights and the
+  corroboration rule differ.
 
 
 ---
