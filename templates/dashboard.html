@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Provenance Guard Dashboard</title>
+<style>
+  :root { --bg:#f7f7f5; --card:#fff; --ink:#1d1d1f; --muted:#6b6b70; --line:#e3e3e0;
+          --ai:#c2410c; --unc:#a16207; --hum:#15803d; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 -apple-system, system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width: 1000px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .k { color:var(--muted); font-size:13px; }
+  .v { font-size:28px; font-weight:600; font-variant-numeric: tabular-nums; }
+  .bar { display:flex; height:14px; border-radius:7px; overflow:hidden; margin:10px 0 6px; background:var(--line); }
+  .bar span { display:block; }
+  .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--muted); }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  h2 { font-size:16px; margin:28px 0 10px; }
+  .tbl { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; font-size:13px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--muted); font-weight:500; }
+  td.num { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Provenance Guard: Analytics</h1>
+  <p class="sub">Detection patterns, appeals and signal agreement across all submissions.</p>
+
+  <div class="grid">
+    <div class="card"><div class="k">Total submissions</div><div class="v">{{ s.total_submissions }}</div></div>
+    <div class="card"><div class="k">Appeal rate</div><div class="v">{{ s.appeal_rate_percent }}%</div></div>
+    <div class="card"><div class="k">Appeal rate on "likely AI" verdicts</div><div class="v">{{ s.appeal_rate_on_ai_verdicts_percent }}%</div></div>
+    <div class="card"><div class="k">Signals disagreed</div><div class="v">{{ s.signal_disagreement_rate_percent }}%</div></div>
+    <div class="card"><div class="k">Average confidence</div><div class="v">{{ s.average_confidence if s.average_confidence is not none else "–" }}</div></div>
+    <div class="card"><div class="k">Certificates issued</div><div class="v">{{ s.certificates_issued }}</div></div>
+  </div>
+
+  <h2>Detection pattern</h2>
+  <div class="card">
+    <div class="bar">
+      <span style="width:{{ s.attribution_percent.likely_ai }}%;background:var(--ai)"></span>
+      <span style="width:{{ s.attribution_percent.uncertain }}%;background:var(--unc)"></span>
+      <span style="width:{{ s.attribution_percent.likely_human }}%;background:var(--hum)"></span>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--ai)"></i>Likely AI {{ s.attribution_counts.likely_ai }} ({{ s.attribution_percent.likely_ai }}%)</span>
+      <span><i class="dot" style="background:var(--unc)"></i>Uncertain {{ s.attribution_counts.uncertain }} ({{ s.attribution_percent.uncertain }}%)</span>
+      <span><i class="dot" style="background:var(--hum)"></i>Likely human {{ s.attribution_counts.likely_human }} ({{ s.attribution_percent.likely_human }}%)</span>
+    </div>
+  </div>
+
+  <h2>Recent audit log</h2>
+  <div class="tbl">
+  <table>
+    <tr><th>Time (UTC)</th><th>Event</th><th>Content</th><th>Attribution</th><th>AI likelihood</th><th>LLM</th><th>Stylo</th><th>Markers</th><th>Status</th></tr>
+    {% for e in recent %}
+    <tr>
+      <td>{{ e.timestamp[:19].replace("T", " ") }}</td><td>{{ e.event }}</td><td>{{ e.content_id[:8] }}</td>
+      <td>{{ e.attribution }}</td><td class="num">{{ e.ai_likelihood }}</td><td class="num">{{ e.llm_score }}</td>
+      <td class="num">{{ e.stylometric_score }}</td><td class="num">{{ e.marker_score }}</td><td>{{ e.status }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</main>
+</body>
+</html>

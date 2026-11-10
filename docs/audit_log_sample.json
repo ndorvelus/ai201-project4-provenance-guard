@@ -1,0 +1,442 @@
+{
+  "entries": [
+    {
+      "id": 1,
+      "timestamp": "2026-11-10T03:14:51.867Z",
+      "event": "classified",
+      "content_id": "110b424c-dcd1-4dcb-b545-44ed018288d7",
+      "creator_id": "test-user-1",
+      "attribution": "likely_ai",
+      "ai_likelihood": 0.942,
+      "confidence": 0.942,
+      "llm_score": 0.98,
+      "stylometric_score": 0.841,
+      "marker_score": 0.999,
+      "status": "classified",
+      "appeal_filed": false,
+      "appeal_id": null,
+      "appeal_reasoning": null,
+      "details": {
+        "signals": {
+          "llm": {
+            "score": 0.98,
+            "details": {
+              "model": "qwen/qwen3.8-27b",
+              "reasoning": "The text relies entirely on generic, high-level abstractions and stock transitional phrases like 'it is important to note' and 'furthermore,' lacking any concrete detail, specific voice, or irregularity characteristic of human writing."
+            }
+          },
+          "stylometric": {
+            "score": 0.841,
+            "details": {
+              "sentence_count": 3,
+              "sentence_length_cv": 0.379,
+              "avg_word_length": 6.23,
+              "informal_markers": 0,
+              "subscores": {
+                "uniformity": 0.602,
+                "word_length": 1.0,
+                "formality": 1.0
+              }
+            }
+          },
+          "markers": {
+            "score": 0.999,
+            "details": {
+              "hits": 8,
+              "hits_per_100_words": 18.6,
+              "phrases": [
+                "it is important to note",
+                "it is equally essential",
+                "furthermore",
+                "paradigm shift",
+                "transformative",
+                "stakeholders",
+                "ensure responsible",
+                "various sectors"
+              ]
+            }
+          }
+        },
+        "scoring_notes": {
+          "weights_used": {
+            "llm": 0.5,
+            "stylometric": 0.3,
+            "markers": 0.2
+          },
+          "short_text_guard": false,
+          "signal_spread": 0.158,
+          "signals_disagree": false,
+          "ai_verdict_corroborated": true,
+          "llm_available": true
+        }
+      }
+    },
+    {
+      "id": 2,
+      "timestamp": "2026-11-10T03:14:52.151Z",
+      "event": "classified",
+      "content_id": "f2f54e71-3c39-45ec-af9e-93124322d97e",
+      "creator_id": "test-user-2",
+      "attribution": "likely_human",
+      "ai_likelihood": 0.041,
+      "confidence": 0.959,
+      "llm_score": 0.05,
+      "stylometric_score": 0.053,
+      "marker_score": 0.0,
+      "status": "classified",
+      "appeal_filed": false,
+      "appeal_id": null,
+      "appeal_reasoning": null,
+      "details": {
+        "signals": {
+          "llm": {
+            "score": 0.05,
+            "details": {
+              "model": "qwen/qwen3.8-27b",
+              "reasoning": "The text features a highly casual, conversational tone with specific sensory details (thirst for three hours), informal punctuation, and a lack of structural polish that strongly indicates human authorship."
+            }
+          },
+          "stylometric": {
+            "score": 0.053,
+            "details": {
+              "sentence_count": 5,
+              "sentence_length_cv": 0.611,
+              "avg_word_length": 4.27,
+              "informal_markers": 12,
+              "subscores": {
+                "uniformity": 0.086,
+                "word_length": 0.061,
+                "formality": 0.0
+              }
+            }
+          },
+          "markers": {
+            "score": 0.0,
+            "details": {
+              "hits": 0,
+              "hits_per_100_words": 0.0,
+              "phrases": []
+            }
+          }
+        },
+        "scoring_notes": {
+          "weights_used": {
+            "llm": 0.5,
+            "stylometric": 0.3,
+            "markers": 0.2
+          },
+          "short_text_guard": false,
+          "signal_spread": 0.053,
+          "signals_disagree": false,
+          "ai_verdict_corroborated": false,
+          "llm_available": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "timestamp": "2026-11-10T03:14:52.583Z",
+      "event": "classified",
+      "content_id": "0f0035be-1d06-4688-a044-d763b5c0a51c",
+      "creator_id": "test-user-3",
+      "attribution": "uncertain",
+      "ai_likelihood": 0.656,
+      "confidence": 0.656,
+      "llm_score": 0.95,
+      "stylometric_score": 0.95,
+      "marker_score": 0.0,
+      "status": "classified",
+      "appeal_filed": false,
+      "appeal_id": null,
+      "appeal_reasoning": null,
+      "details": {
+        "signals": {
+          "llm": {
+            "score": 0.95,
+            "details": {
+              "model": "qwen/qwen3.8-27b",
+              "reasoning": "The text relies on generic, high-level academic phrasing and stock transitions without offering specific data, unique insights, or a distinct authorial voice, which are hallmarks of AI-generated summaries."
+            }
+          },
+          "stylometric": {
+            "score": 0.95,
+            "details": {
+              "sentence_count": 2,
+              "sentence_length_cv": 0.256,
+              "avg_word_length": 5.93,
+              "informal_markers": 0,
+              "subscores": {
+                "uniformity": 0.876,
+                "word_length": 1.0,
+                "formality": 1.0
+              }
+            }
+          },
+          "markers": {
+            "score": 0.0,
+            "details": {
+              "hits": 0,
+              "hits_per_100_words": 0.0,
+              "phrases": []
+            }
+          }
+        },
+        "scoring_notes": {
+          "weights_used": {
+            "llm": 0.5,
+            "stylometric": 0.3,
+            "markers": 0.2
+          },
+          "short_text_guard": false,
+          "signal_spread": 0.95,
+          "signals_disagree": true,
+          "ai_verdict_corroborated": true,
+          "llm_available": true
+        }
+      }
+    },
+    {
+      "id": 4,
+      "timestamp": "2026-11-10T03:14:52.948Z",
+      "event": "classified",
+      "content_id": "39a2b255-7a65-4fa3-b3f1-617272ab6116",
+      "creator_id": "test-user-4",
+      "attribution": "uncertain",
+      "ai_likelihood": 0.634,
+      "confidence": 0.634,
+      "llm_score": 0.85,
+      "stylometric_score": 0.783,
+      "marker_score": 0.0,
+      "status": "classified",
+      "appeal_filed": false,
+      "appeal_id": null,
+      "appeal_reasoning": null,
+      "details": {
+        "signals": {
+          "llm": {
+            "score": 0.85,
+            "details": {
+              "model": "qwen/qwen3.8-27b",
+              "reasoning": "The text relies on generic, balanced abstractions and stock phrasing ('genuine tradeoffs', 'studies show') without any specific personal anecdotes or idiosyncratic voice, which is characteristic of AI-generated summaries."
+            }
+          },
+          "stylometric": {
+            "score": 0.783,
+            "details": {
+              "sentence_count": 3,
+              "sentence_length_cv": 0.382,
+              "avg_word_length": 5.18,
+              "informal_markers": 0,
+              "subscores": {
+                "uniformity": 0.595,
+                "word_length": 0.816,
+                "formality": 1.0
+              }
+            }
+          },
+          "markers": {
+            "score": 0.0,
+            "details": {
+              "hits": 0,
+              "hits_per_100_words": 0.0,
+              "phrases": []
+            }
+          }
+        },
+        "scoring_notes": {
+          "weights_used": {
+            "llm": 0.667,
+            "stylometric": 0.2,
+            "markers": 0.133
+          },
+          "short_text_guard": true,
+          "signal_spread": 0.85,
+          "signals_disagree": true,
+          "ai_verdict_corroborated": true,
+          "llm_available": true
+        }
+      }
+    },
+    {
+      "id": 5,
+      "timestamp": "2026-11-10T03:14:53.281Z",
+      "event": "classified",
+      "content_id": "9d5eca62-66dc-41f7-9b37-9bd8579c7cd2",
+      "creator_id": "test-user-5",
+      "attribution": "uncertain",
+      "ai_likelihood": 0.625,
+      "confidence": 0.625,
+      "llm_score": 0.85,
+      "stylometric_score": 0.71,
+      "marker_score": 0.0,
+      "status": "classified",
+      "appeal_filed": false,
+      "appeal_id": null,
+      "appeal_reasoning": null,
+      "details": {
+        "signals": {
+          "llm": {
+            "score": 0.85,
+            "details": {
+              "model": "qwen/qwen3.8-27b",
+              "reasoning": "The text relies on highly generic, clichéd imagery ('hues of amber and rose', 'neighborhood slowly go quiet') and lacks any specific, idiosyncratic details or irregular rhythm that would suggest a human voice."
+            }
+          },
+          "stylometric": {
+            "score": 0.71,
+            "details": {
+              "sentence_count": 2,
+              "sentence_length_cv": 0.034,
+              "avg_word_length": 4.24,
+              "informal_markers": 0,
+              "subscores": {
+                "uniformity": 1.0,
+                "word_length": 0.034,
+                "formality": 1.0
+              }
+            }
+          },
+          "markers": {
+            "score": 0.0,
+            "details": {
+              "hits": 0,
+              "hits_per_100_words": 0.0,
+              "phrases": []
+            }
+          }
+        },
+        "scoring_notes": {
+          "weights_used": {
+            "llm": 0.667,
+            "stylometric": 0.2,
+            "markers": 0.133
+          },
+          "short_text_guard": true,
+          "signal_spread": 0.85,
+          "signals_disagree": true,
+          "ai_verdict_corroborated": true,
+          "llm_available": true
+        }
+      }
+    },
+    {
+      "id": 6,
+      "timestamp": "2026-11-10T03:15:05.529Z",
+      "event": "appeal_filed",
+      "content_id": "0f0035be-1d06-4688-a044-d763b5c0a51c",
+      "creator_id": "test-user-3",
+      "attribution": "uncertain",
+      "ai_likelihood": 0.656,
+      "confidence": 0.656,
+      "llm_score": 0.95,
+      "stylometric_score": 0.95,
+      "marker_score": 0.0,
+      "status": "under_review",
+      "appeal_filed": true,
+      "appeal_id": "1ef001b1-3466-4b20-a0f2-958130dc1580",
+      "appeal_reasoning": "I wrote this myself from personal experience. I am a non-native English speaker and my writing style may appear more formal than typical.",
+      "details": {
+        "original_label": "❔ Origin unclear — Our automated checks couldn't tell with confidence whether a person or an AI tool wrote this. Treat this as \"we don't know,\" not as an accusation.",
+        "original_status": "classified"
+      }
+    },
+    {
+      "id": 7,
+      "timestamp": "2026-11-10T03:15:56.629Z",
+      "event": "certificate_issued",
+      "content_id": "f2f54e71-3c39-45ec-af9e-93124322d97e",
+      "creator_id": "test-user-2",
+      "attribution": "likely_human",
+      "ai_likelihood": 0.041,
+      "confidence": 0.959,
+      "llm_score": 0.05,
+      "stylometric_score": 0.053,
+      "marker_score": 0.0,
+      "status": "verified_human",
+      "appeal_filed": false,
+      "appeal_id": null,
+      "appeal_reasoning": null,
+      "details": {
+        "certificate_id": "PG-9FE23005D97E",
+        "evidence": {
+          "draft_count": 2,
+          "step_char_similarities": [
+            0.205,
+            0.791
+          ],
+          "step_vocabulary_overlaps": [
+            0.812,
+            0.974
+          ],
+          "draft_lengths": [
+            94,
+            218
+          ],
+          "final_vocabulary_overlap": 0.974
+        }
+      }
+    },
+    {
+      "id": 8,
+      "timestamp": "2026-11-10T03:16:02.942Z",
+      "event": "classified",
+      "content_id": "cf14d5e7-be72-453f-8c30-b47044ff34b5",
+      "creator_id": "ratelimit-test",
+      "attribution": "likely_human",
+      "ai_likelihood": 0.3,
+      "confidence": 0.7,
+      "llm_score": 0.0,
+      "stylometric_score": 0.832,
+      "marker_score": 0.0,
+      "status": "classified",
+      "appeal_filed": false,
+      "appeal_id": null,
+      "appeal_reasoning": null,
+      "details": {
+        "signals": {
+          "llm": {
+            "score": 0.0,
+            "details": {
+              "model": "qwen/qwen3.8-27b",
+              "reasoning": "The text is a short, functional statement explicitly identifying itself as a test submission, which is a common human action for verifying system limits rather than a creative writing sample."
+            }
+          },
+          "stylometric": {
+            "score": 0.832,
+            "details": {
+              "sentence_count": 1,
+              "sentence_length_cv": 0.0,
+              "avg_word_length": 4.73,
+              "informal_markers": 0,
+              "subscores": {
+                "uniformity": 1.0,
+                "word_length": 0.439,
+                "formality": 1.0
+              }
+            }
+          },
+          "markers": {
+            "score": 0.0,
+            "details": {
+              "hits": 0,
+              "hits_per_100_words": 0.0,
+              "phrases": []
+            }
+          }
+        },
+        "scoring_notes": {
+          "weights_used": {
+            "llm": 0.667,
+            "stylometric": 0.2,
+            "markers": 0.133
+          },
+          "short_text_guard": true,
+          "signal_spread": 0.832,
+          "signals_disagree": true,
+          "ai_verdict_corroborated": false,
+          "llm_available": true
+        }
+      }
+    }
+  ]
+}
